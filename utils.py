@@ -7,6 +7,7 @@
 import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
+from sklearn.preprocessing import LabelEncoder
 
 df_train_trans=pd.read_csv('input/transaction_TRAIN.csv') # (161965, 27)
 df_train_op=pd.read_csv('input/operation_TRAIN.csv') # (424481, 20)
@@ -18,7 +19,7 @@ df_test_op=pd.read_csv('input/operation_round1.csv') # (424481, 20)
 df_test_tag=pd.read_csv('input/tag_TEST_round1.csv') # (13422, 2)
 
 
-def create_fea_first(df_trans,df_op,df_tag):
+def create_fea_1(df_trans,df_op,df_tag):
     """
     用户操作和交易数量
     :param df_trans:
@@ -26,7 +27,6 @@ def create_fea_first(df_trans,df_op,df_tag):
     :param df_tag:
     :return:
     """
-    print("create fea1...")
     ## 训练集
     df_trans_uids=df_trans['UID']
     df_op_uids=df_op['UID']
@@ -43,7 +43,7 @@ def create_fea_first(df_trans,df_op,df_tag):
     return df_tag
 
 
-def create_fea_second(df_trans,df_tag):
+def create_fea_2(df_trans,df_tag):
     """
     用户交易金额
     :param df_trans:
@@ -51,11 +51,7 @@ def create_fea_second(df_trans,df_tag):
     :param df_tag:
     :return:
     """
-    print("create fea2...")
-
     df_tag_uids = df_tag['UID']  # 标签中的UID都是唯一的
-
-    ## 训练集
     trans_amt_sum= df_trans.groupby('UID').sum()['trans_amt']
     trans_amt_mean= df_trans.groupby('UID').mean()['trans_amt']
 
@@ -75,9 +71,7 @@ def create_fea_second(df_trans,df_tag):
     return df_tag
 
 
-def create_fea_third(df_op,df_tag):
-    print("create fea3...")
-
+def create_fea_3(df_op,df_tag):
     # 训练集中所有的版本号，对应成索引
     op_versions = dict(df_op['version'].value_counts()).keys()
     op_versions = list(op_versions)
@@ -101,20 +95,86 @@ def create_fea_third(df_op,df_tag):
 
     return df_tag
 
-def create_feature():
+
+def create_fea_4(df_trans,df_tag):
+    """
+    脱敏后账户交易余额
+    :param df_trans:
+    :param df_tag:
+    :return:
+    """
+    df_tag_uids = df_tag['UID']  # 标签中的UID都是唯一的
+    trans_bal_sum = df_trans.groupby('UID').sum()['bal']
+    trans_bal_mean = df_trans.groupby('UID').mean()['bal']
+
+    trans_bal_sum = dict(trans_bal_sum)
+    trans_bal_sum = [trans_bal_sum[uid] if uid in trans_bal_sum else 0 for uid in df_tag_uids]
+
+    trans_bal_mean = dict(trans_bal_mean)
+    trans_bal_mean = [trans_bal_mean[uid] if uid in trans_bal_mean else 0 for uid in df_tag_uids]
+
+    df_tag['trans_bal_sum'] = trans_bal_sum
+    df_tag['trans_bal_mean'] = trans_bal_mean
+
+    return df_tag
+
+
+def create_fea_5(df_trans,df_tag):
+    """
+    交易 ip 特征
+    :param df_trans:
+    :param df_tag:
+    :return:
+    """
+    black_uids = df_train_tag[df_train_tag['Tag'] == 1]['UID']
+    black_trans = df_train_trans[df_train_trans['UID'].isin(black_uids)]
+    black_ips = black_trans['ip1'].value_counts().index.tolist()
+
+    trans_ips = df_trans.groupby('UID')['ip1'].value_counts().index.tolist()
+
+    def get_ip_label(uid):
+        temp = []
+        for uid_ip in trans_ips:
+            if uid_ip[0] == uid:
+                temp.append(uid_ip[1])
+        if set(black_ips).intersection(set(temp)):
+            return 1  # 黑用户
+        else:  # 存在于白用户ip或者不存在ip记录
+            return 0  # 白用户
+
+    ip_labels = [get_ip_label(uid) for uid in df_tag['UID']]
+    label_encoder=LabelEncoder()
+    df_tag['ip1_label']=label_encoder.fit_transform(ip_labels)
+    return df_tag
+
+
+def create_feature(df_train_tag=df_train_tag,df_test_tag=df_test_tag):
     # 创建特征1
-    df_train=create_fea_first(df_train_trans,df_train_op,df_train_tag)
-    df_test=create_fea_first(df_test_trans,df_test_op,df_test_tag)
+    # print("create fea1...")
+    # df_train_tag=create_fea_1(df_train_trans,df_train_op,df_train_tag)
+    # df_test_tag=create_fea_1(df_test_trans,df_test_op,df_test_tag)
 
     # 创建特征2
-    df_train = create_fea_second(df_train_trans, df_train)
-    df_test = create_fea_second(df_test_trans, df_test)
+    print("create fea2 trans_amt...")
+    df_train_tag = create_fea_2(df_train_trans, df_train_tag)
+    df_test_tag = create_fea_2(df_test_trans, df_test_tag)
 
     # 创建特征3
-    df_train = create_fea_third(df_train_op, df_train)
-    df_test = create_fea_third(df_train_op, df_test)
-    print(df_train['op_version'])
-    return df_train,df_test
+    # print("create fea3...")
+    # df_train = create_fea_third(df_train_op, df_train)
+    # df_test = create_fea_third(df_train_op, df_test)
+
+    # 创建特征4
+    print("create fea4 bal...")
+    df_train_tag = create_fea_4(df_train_trans, df_train_tag)
+    df_test_tag = create_fea_4(df_test_trans, df_test_tag)
+
+    # 创建特征5
+    print("create fea5 ip...")
+    df_train_tag = create_fea_5(df_train_trans, df_train_tag)
+    df_test_tag = create_fea_5(df_test_trans, df_test_tag)
+
+    return df_train_tag,df_test_tag
 
 
-create_feature()
+

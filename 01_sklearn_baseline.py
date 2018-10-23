@@ -16,7 +16,7 @@ from sklearn.ensemble import AdaBoostClassifier
 from xgboost import XGBClassifier
 from lightgbm import LGBMClassifier
 from sklearn.preprocessing import MinMaxScaler,StandardScaler
-scaler=MinMaxScaler()
+# scaler=MinMaxScaler()
 # 设置随机种子
 SEED=222
 np.random.seed(SEED)
@@ -26,7 +26,7 @@ df_train,df_test=create_feature()
 
 def get_train_test(test_size=0.2):
     X = df_train.drop(['UID', 'Tag'], axis=1, inplace=False)
-    X=scaler.fit_transform(X)
+    # X=scaler.fit_transform(X)
 
     y = df_train['Tag']
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=test_size, random_state=42)
@@ -62,7 +62,7 @@ def train_predict(model_list):
     """Fit models in list on training set and return preds"""
     P = np.zeros((y_test.shape[0], len(model_list)))
     x_sub = df_test.drop(['UID', 'Tag'], axis=1, inplace=False)
-    x_sub=scaler.transform(x_sub)
+    # x_sub=scaler.transform(x_sub)
     P_sub = np.zeros((x_sub.shape[0], len(model_list)))
     P = pd.DataFrame(P)
     P_sub = pd.DataFrame(P_sub)

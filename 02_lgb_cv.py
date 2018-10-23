@@ -13,7 +13,7 @@ from sklearn.model_selection import train_test_split,KFold
 from lightgbm import LGBMClassifier
 from sklearn.preprocessing import MinMaxScaler,StandardScaler
 from sklearn.metrics import roc_auc_score
-scaler=MinMaxScaler()
+# scaler=MinMaxScaler()
 # 设置随机种子
 SEED=222
 np.random.seed(SEED)
@@ -21,15 +21,15 @@ df_train,df_test=create_feature()
 
 # 加载数据
 X = df_train.drop(['UID', 'Tag'], axis=1, inplace=False)
-X=scaler.fit_transform(X)
+# X=scaler.fit_transform(X)
 y = df_train['Tag']
 
 
 x_sub = df_test.drop(['UID', 'Tag'], axis=1, inplace=False)
-x_sub=scaler.transform(x_sub)
+# x_sub=scaler.transform(x_sub)
 
 
-kf=KFold(n_splits=3, shuffle=False,random_state=42)
+kf=KFold(n_splits=5, shuffle=False,random_state=42)
 model=LGBMClassifier()
 mean_auc=[]
 for index, (train_index, test_index) in enumerate(kf.split(X)):
