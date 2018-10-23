@@ -6,6 +6,7 @@
 
 import pandas as pd
 import matplotlib.pyplot as plt
+import numpy as np
 
 df_train_trans=pd.read_csv('input/transaction_TRAIN.csv') # (161965, 27)
 df_train_op=pd.read_csv('input/operation_TRAIN.csv') # (424481, 20)
@@ -25,6 +26,7 @@ def create_fea_first(df_trans,df_op,df_tag):
     :param df_tag:
     :return:
     """
+    print("create fea1...")
     ## 训练集
     df_trans_uids=df_trans['UID']
     df_op_uids=df_op['UID']
@@ -49,6 +51,8 @@ def create_fea_second(df_trans,df_tag):
     :param df_tag:
     :return:
     """
+    print("create fea2...")
+
     df_tag_uids = df_tag['UID']  # 标签中的UID都是唯一的
 
     ## 训练集
@@ -71,6 +75,32 @@ def create_fea_second(df_trans,df_tag):
     return df_tag
 
 
+def create_fea_third(df_op,df_tag):
+    print("create fea3...")
+
+    # 训练集中所有的版本号，对应成索引
+    op_versions = dict(df_op['version'].value_counts()).keys()
+    op_versions = list(op_versions)
+    op_versions.sort()
+    index = range(len(op_versions))
+    ver_index = dict(zip(op_versions, index))
+    df_tag_uids = df_tag['UID']  # 标签中的UID都是唯一的
+    uid_op_ver = df_op[df_op['UID'].isin(df_tag_uids)]
+    all_vers = []
+    for uid in df_tag_uids:
+        # ver_arr = np.zeros(30)
+        ver_arr = []
+        ver = dict(uid_op_ver[uid_op_ver['UID'] == uid]['version'].value_counts())
+        for key, value in ver.items():
+            index = ver_index[key]
+            ver_arr.append(index)
+        if not ver_arr:
+            ver_arr=[30]
+        all_vers.append(max(ver_arr))
+    df_tag['op_version'] = all_vers
+
+    return df_tag
+
 def create_feature():
     # 创建特征1
     df_train=create_fea_first(df_train_trans,df_train_op,df_train_tag)
@@ -80,6 +110,11 @@ def create_feature():
     df_train = create_fea_second(df_train_trans, df_train)
     df_test = create_fea_second(df_test_trans, df_test)
 
+    # 创建特征3
+    df_train = create_fea_third(df_train_op, df_train)
+    df_test = create_fea_third(df_train_op, df_test)
+    print(df_train['op_version'])
     return df_train,df_test
+
 
 create_feature()
