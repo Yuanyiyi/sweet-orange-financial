@@ -169,10 +169,10 @@ def create_feature(df_train_tag=df_train_tag,df_test_tag=df_test_tag):
     df_train_tag = create_fea_4(df_train_trans, df_train_tag)
     df_test_tag = create_fea_4(df_test_trans, df_test_tag)
 
-    # 创建特征5
-    print("create fea5 ip...")
-    df_train_tag = create_fea_5(df_train_trans, df_train_tag)
-    df_test_tag = create_fea_5(df_test_trans, df_test_tag)
+    # # 创建特征5
+    # print("create fea5 ip...")
+    # df_train_tag = create_fea_5(df_train_trans, df_train_tag)
+    # df_test_tag = create_fea_5(df_test_trans, df_test_tag)
 
     return df_train_tag,df_test_tag
 
