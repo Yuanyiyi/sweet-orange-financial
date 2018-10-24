@@ -23,7 +23,7 @@ np.random.seed(SEED)
 
 df_train,df_test=create_feature()
 
-
+print(df_train['ip1_label'])
 def get_train_test(test_size=0.2):
     X = df_train.drop(['UID', 'Tag'], axis=1, inplace=False)
     # X=scaler.fit_transform(X)
